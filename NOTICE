@@ -1,0 +1,13 @@
+inspection-align-bench
+Copyright 2026 Kai Xuan
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It contains no third-party source code. At run time it can use, without bundling them:
+  OpenCV (Apache-2.0), NumPy (BSD-3-Clause), pandas (BSD-3-Clause), PyYAML (MIT), Matplotlib (Matplotlib License),
+  and optionally PyTorch (BSD-3-Clause), Kornia (Apache-2.0) and LightGlue with its DISK and SIFT weights (Apache-2.0).
+
+Results in this repository are computed on images from VisA (CC BY 4.0, Zou et al., ECCV 2022) and MVTec AD
+(CC BY-NC-SA 4.0, Bergmann et al., CVPR 2019). Pictures in report/ are made from VisA images (CC BY 4.0); no MVTec AD
+image, and no picture made from one, is included. The landmark files in annotations/ are made on VisA images and are
+licensed CC BY 4.0 (credit: Kai Xuan).

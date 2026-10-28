@@ -1,0 +1,124 @@
+{
+  "calibration_run": "results/metal_nut_calib",
+  "tau_px": 10.3,
+  "criterion": "max-risk 0.05: lowest threshold with at most 5% of accepted poses wrong",
+  "methods": {
+    "phase_correlation": {
+      "score": "own confidence (peak / edge score)",
+      "pairs": 30,
+      "right_poses": 0,
+      "default_rule": {
+        "coverage": 0.3333333333333333,
+        "risk": 1.0
+      },
+      "threshold": null,
+      "accept_none": true,
+      "coverage": 0.0,
+      "risk": 0.0,
+      "warning": "only 0 right poses in the calibration set: the threshold is poorly determined"
+    },
+    "sift_ransac": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 4,
+      "default_rule": {
+        "coverage": 0.06666666666666667,
+        "risk": 0.5
+      },
+      "threshold": null,
+      "accept_none": true,
+      "coverage": 0.0,
+      "risk": 0.0,
+      "warning": "only 4 right poses in the calibration set: the threshold is poorly determined"
+    },
+    "lightglue_disk": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 2,
+      "default_rule": {
+        "coverage": 1.0,
+        "risk": 0.9333333333333333
+      },
+      "threshold": null,
+      "accept_none": true,
+      "coverage": 0.0,
+      "risk": 0.0,
+      "warning": "only 2 right poses in the calibration set: the threshold is poorly determined"
+    },
+    "lightglue_sift": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 6,
+      "default_rule": {
+        "coverage": 0.9,
+        "risk": 0.7777777777777778
+      },
+      "threshold": 195.0,
+      "coverage": 0.03333333333333333,
+      "risk": 0.0
+    },
+    "contour_shape_match": {
+      "score": "own confidence (peak / edge score)",
+      "pairs": 30,
+      "right_poses": 26,
+      "default_rule": {
+        "coverage": 0.0,
+        "risk": 0.0
+      },
+      "threshold": 0.198145417931936,
+      "coverage": 0.36666666666666664,
+      "risk": 0.0
+    },
+    "phase_correlation+rot": {
+      "score": "own confidence (peak / edge score)",
+      "pairs": 30,
+      "right_poses": 4,
+      "default_rule": {
+        "coverage": 0.6333333333333333,
+        "risk": 0.8947368421052632
+      },
+      "threshold": null,
+      "accept_none": true,
+      "coverage": 0.0,
+      "risk": 0.0,
+      "warning": "only 4 right poses in the calibration set: the threshold is poorly determined"
+    },
+    "sift_ransac+rot": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 8,
+      "default_rule": {
+        "coverage": 0.13333333333333333,
+        "risk": 0.5
+      },
+      "threshold": 7.0,
+      "coverage": 0.06666666666666667,
+      "risk": 0.0
+    },
+    "lightglue_disk+rot": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 3,
+      "default_rule": {
+        "coverage": 1.0,
+        "risk": 0.9
+      },
+      "threshold": 180.0,
+      "coverage": 0.03333333333333333,
+      "risk": 0.0,
+      "warning": "only 3 right poses in the calibration set: the threshold is poorly determined"
+    },
+    "lightglue_sift+rot": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 9,
+      "default_rule": {
+        "coverage": 0.9333333333333333,
+        "risk": 0.6785714285714286
+      },
+      "threshold": 278.0,
+      "coverage": 0.03333333333333333,
+      "risk": 0.0
+    }
+  }
+}

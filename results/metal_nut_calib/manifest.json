@@ -1,0 +1,185 @@
+{
+  "alignbench": "0.8.0",
+  "mode": "annotated_pairs",
+  "data_root": "data/metal_nut_calib",
+  "n_pairs": 30,
+  "data_fingerprint": "b6f894adc63b1e97",
+  "config": {
+    "data": {
+      "root": "data/metal_nut_calib",
+      "coord_origin": "center",
+      "mask": "auto",
+      "min_points": 3,
+      "templates": {},
+      "template_image": null
+    },
+    "work_long_side": null,
+    "tau_px": 10.3,
+    "cv2_threads": 1,
+    "methods": [
+      {
+        "name": "identity"
+      },
+      {
+        "name": "phase_correlation"
+      },
+      {
+        "name": "sift_ransac"
+      },
+      {
+        "name": "lightglue_disk",
+        "params": {
+          "device": "cpu"
+        }
+      },
+      {
+        "name": "lightglue_sift",
+        "params": {
+          "device": "cpu"
+        }
+      },
+      {
+        "name": "contour_shape_match",
+        "params": {
+          "max_rotation_deg": 45,
+          "max_scale_deviation": 0.15,
+          "max_translation_ratio": 0.5
+        },
+        "declared": {
+          "rotation_deg": 45,
+          "scale_dev": 0.15,
+          "shift_frac": 0.5
+        }
+      },
+      {
+        "name": "phase_correlation+rot",
+        "params": {
+          "step_deg": 15,
+          "range_deg": 90
+        }
+      },
+      {
+        "name": "sift_ransac+rot",
+        "params": {
+          "step_deg": 15,
+          "range_deg": 90
+        }
+      },
+      {
+        "name": "lightglue_disk+rot",
+        "params": {
+          "step_deg": 15,
+          "range_deg": 90,
+          "device": "cpu"
+        }
+      },
+      {
+        "name": "lightglue_sift+rot",
+        "params": {
+          "step_deg": 15,
+          "range_deg": 90,
+          "device": "cpu"
+        }
+      }
+    ],
+    "outputs": {
+      "overlays": "failures",
+      "gt_check": true,
+      "overlay_max_side": 1280
+    },
+    "symmetry": {
+      "Full": {
+        "order": 4,
+        "cycle": [
+          "p2",
+          "p3",
+          "p4",
+          "p5"
+        ]
+      }
+    }
+  },
+  "opencv": "5.0.0",
+  "numpy": "2.5.4",
+  "python": "3.14.6",
+  "platform": "Linux-6.14.0-1013-nvidia-aarch64-with-glibc2.39",
+  "cpu_count": 20,
+  "jobs": 1,
+  "git_commit": null,
+  "started": "2026-10-25T23:20:36",
+  "methods": [
+    {
+      "name": "identity",
+      "family": "none",
+      "model": "identity"
+    },
+    {
+      "name": "phase_correlation",
+      "family": "dense_global",
+      "model": "translation"
+    },
+    {
+      "name": "sift_ransac",
+      "family": "classical_keypoints",
+      "model": "similarity"
+    },
+    {
+      "name": "lightglue_disk",
+      "family": "learned_matcher",
+      "model": "similarity"
+    },
+    {
+      "name": "lightglue_sift",
+      "family": "learned_matcher",
+      "model": "similarity"
+    },
+    {
+      "name": "contour_shape_match",
+      "family": "shape",
+      "model": "similarity"
+    },
+    {
+      "name": "phase_correlation+rot",
+      "family": "dense_global",
+      "model": "translation"
+    },
+    {
+      "name": "sift_ransac+rot",
+      "family": "classical_keypoints",
+      "model": "similarity"
+    },
+    {
+      "name": "lightglue_disk+rot",
+      "family": "learned_matcher",
+      "model": "similarity"
+    },
+    {
+      "name": "lightglue_sift+rot",
+      "family": "learned_matcher",
+      "model": "similarity"
+    }
+  ],
+  "unavailable": {},
+  "learned": {
+    "lightglue_disk": {
+      "device": "cpu",
+      "torch": "2.14.1+cu130",
+      "cuda_available": true
+    },
+    "lightglue_sift": {
+      "device": "cpu",
+      "torch": "2.14.1+cu130",
+      "cuda_available": true
+    },
+    "lightglue_disk+rot": {
+      "device": "",
+      "torch": null,
+      "cuda_available": null
+    },
+    "lightglue_sift+rot": {
+      "device": "",
+      "torch": null,
+      "cuda_available": null
+    }
+  }
+}

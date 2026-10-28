@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+# dataset images and your own working data never go into the repository
+data/
+# result folders: only the CSVs, manifests, thresholds and summaries are published
+results/**/overlays/
+results/**/gt_check/
+results/**/points.csv
+results/**/run.log
+results/**/done_pairs.txt
+results/**/results_classified.csv

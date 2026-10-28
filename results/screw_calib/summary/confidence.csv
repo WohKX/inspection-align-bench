@@ -1,0 +1,10 @@
+method,auroc,right_pose_any_decision,coverage_at_5pct_risk,risk_at_50pct_coverage
+phase_correlation,,0.0,0.0,1.0
+sift_ransac,,0.0,0.0,1.0
+lightglue_disk,,0.0,0.0,1.0
+lightglue_sift,0.7246376811594203,0.1,0.03333333333333333,0.8125
+contour_shape_match,,0.03333333333333333,0.0,0.9333333333333333
+phase_correlation+rot,,0.0,0.0,1.0
+sift_ransac+rot,,0.0,0.0,1.0
+lightglue_disk+rot,,0.0,0.0,1.0
+lightglue_sift+rot,0.9135802469135802,0.1,0.03333333333333333,0.8

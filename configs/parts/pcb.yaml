@@ -1,0 +1,35 @@
+# PCB (VisA pcb). Frozen protocol for this part: change it only by a dated amendment in PROTOCOL.md.
+#     python evaluate.py --config configs/parts/pcb.yaml --out results/pcb
+# Every value below was set before the final run; how each was chosen is in PROTOCOL.md (section 4).
+
+data:
+  root: data/pcb              # landmarks.json + images/ + templates/Full/<golden>.<ext> (DATA_FORMAT.md)
+  coord_origin: center          # the landmark picker uses the OpenCV convention
+  mask: auto                    # golden object mask: <golden>_mask.png if present, else Otsu + morphology
+  min_points: 3
+
+work_long_side: null            # native resolution
+tau_px: 7.2                     # 2 x the 95th percentile of the annotation floor over all three goldens
+cv2_threads: 1
+
+symmetry: {}
+
+methods:
+  - {name: identity}            # reference line: the raw misalignment of each pair
+  - {name: phase_correlation}
+  - {name: sift_ransac}
+  - {name: lightglue_disk, params: {device: cpu}}       # device: cuda if torch sees a GPU (manifest.json records it)
+  - {name: lightglue_sift, params: {device: cpu}}
+  - name: contour_shape_match   # searches every distinct orientation (180/n deg) anywhere in the frame
+    params: {max_rotation_deg: 180, max_scale_deviation: 0.15, max_translation_ratio: 0.5}
+    declared: {rotation_deg: 180, scale_dev: 0.15, shift_frac: 0.5}
+  # rotation search: the test image turned in 15 deg steps over 360 deg (360/n), the method's own score picks the angle
+  - {name: phase_correlation+rot, params: {step_deg: 15, range_deg: 360}}
+  - {name: sift_ransac+rot, params: {step_deg: 15, range_deg: 360}}
+  - {name: lightglue_disk+rot, params: {step_deg: 15, range_deg: 360, device: cpu}}
+  - {name: lightglue_sift+rot, params: {step_deg: 15, range_deg: 360, device: cpu}}
+
+outputs:
+  overlays: failures            # none | failures | all  (report.py copies examples from here)
+  gt_check: true
+  overlay_max_side: 1280

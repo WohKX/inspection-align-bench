@@ -1,0 +1,10 @@
+method,golden 1 alone,golden 2 alone,golden 3 alone,own pick of 1: correct,own pick of 1: silent_wrong,own pick of 2: correct,own pick of 2: silent_wrong,own pick of 3: correct,own pick of 3: silent_wrong,best possible of 2,best possible of 3
+phase_correlation,0.0,0.0,0.0,0.0,0.1,0.0,0.1,0.0,0.1,0.0,0.0
+sift_ransac,0.0,0.0,0.0,0.0,0.5,0.0,0.5,0.0,0.5,0.0,0.0
+lightglue_disk,0.0,0.0,0.0,0.0,0.7,0.0,0.8,0.0,0.8,0.0,0.0
+lightglue_sift,0.0,0.0,0.1,0.0,0.4,0.0,0.5,0.1,0.6,0.0,0.1
+contour_shape_match,1.0,1.0,1.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0,1.0
+phase_correlation+rot,0.0,0.0,0.0,0.0,0.1,0.0,0.1,0.0,0.1,0.0,0.0
+sift_ransac+rot,0.0,0.0,0.0,0.0,0.6,0.0,0.6,0.0,0.6,0.0,0.0
+lightglue_disk+rot,0.0,0.0,0.0,0.0,0.7,0.0,0.8,0.0,0.8,0.0,0.0
+lightglue_sift+rot,0.0,0.0,0.1,0.0,0.5,0.0,0.5,0.0,0.7,0.0,0.1

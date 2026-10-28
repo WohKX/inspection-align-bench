@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Landmark Picker: open this file in a browser (double-click). Nothing is uploaded; images stay on this computer.
+     It writes landmarks.json in the format evaluate.py reads (DATA_FORMAT.md, layout C). -->
+<style>body { margin: 0; } [hidden] { display: none !important; } img { max-width: 100%; }</style>
+<title>Landmark Picker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an inspection bench. Setup and progress in a narrow rail on the left; golden and test image side by side on a dark stage. */
+:root {
+  --bg: #eef1f4;
+  --panel: #fbfcfd;
+  --ink: #17212b;
+  --muted: #5a6774;
+  --line: #d3dbe2;
+  --chip: #e3e9ee;
+  --accent: #0b6f78;
+  --accent-ink: #ffffff;
+  --stage: #1a222a;
+  --stage-ink: #c9d3db;
+  --ok: #1f7a43;
+  --warn: #9a5800;
+  --bad: #b3261e;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1419; --panel: #141c23; --ink: #e2e8ed; --muted: #92a0ac; --line: #26323c; --chip: #1c2731;
+    --accent: #43c0c9; --accent-ink: #052326; --stage: #090d11; --stage-ink: #b9c4cd;
+    --ok: #5cc483; --warn: #e2a440; --bad: #ef7b72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1419; --panel: #141c23; --ink: #e2e8ed; --muted: #92a0ac; --line: #26323c; --chip: #1c2731;
+  --accent: #43c0c9; --accent-ink: #052326; --stage: #090d11; --stage-ink: #b9c4cd;
+  --ok: #5cc483; --warn: #e2a440; --bad: #ef7b72; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px; box-sizing: border-box;
+}
+*, *::before, *::after { box-sizing: border-box; }
+.app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; }
+h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.01em; text-wrap: balance; }
+h2 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* header */
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; }
+.brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.brand p { margin: 0; color: var(--muted); max-width: 70ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.small { height: 26px; padding: 0 8px; font-size: 12.5px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: var(--accent-ink); }
+.btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .row:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* main */
+.work { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 12px; min-height: 0; }
+.side { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: auto; padding-right: 2px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.field { display: grid; grid-template-columns: 70px minmax(0, 1fr); align-items: center; gap: 8px; }
+.field label { color: var(--muted); font-size: 12.5px; }
+input[type="text"], select, textarea {
+  width: 100%; min-width: 0; height: 30px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); font: inherit;
+}
+textarea { height: 120px; padding: 8px; font-family: var(--font-mono); font-size: 11.5px; resize: vertical; }
+
+.list { display: flex; flex-direction: column; gap: 2px; }
+.row {
+  display: grid; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 5px; cursor: pointer;
+  border: 1px solid transparent;
+}
+.row:hover { background: var(--chip); }
+.row.on { border-color: var(--accent); background: var(--chip); }
+.pts .row { grid-template-columns: 12px minmax(0, 1fr) 22px 22px 26px; }
+.imgs .row { grid-template-columns: minmax(0, 1fr) auto 40px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 13px; }
+.mark { font-size: 11px; text-align: center; color: var(--muted); font-family: var(--font-mono); }
+.mark.yes { color: var(--ok); font-weight: 600; }
+.x { border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; border-radius: 4px; height: 22px; }
+.x:hover { color: var(--bad); background: var(--panel); }
+.x.arm { color: var(--accent-ink); background: var(--bad); font-size: 11px; }
+.colhead { display: grid; grid-template-columns: 12px minmax(0, 1fr) 22px 22px 26px; gap: 8px; padding: 0 6px; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.colhead span { text-align: center; }
+.colhead span:nth-child(2) { text-align: left; }
+.addrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.chip { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 7px; border-radius: 10px; background: var(--chip); color: var(--muted); }
+.chip.ok { color: var(--ok); }
+.chip.warn { color: var(--warn); }
+.hint { color: var(--muted); font-size: 12.5px; margin: 0; }
+.msg { font-size: 12.5px; margin: 0; min-height: 1.2em; }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--ok); }
+pre.layout { margin: 0; padding: 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5; overflow-x: auto; white-space: pre; }
+
+/* stage */
+.stages { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-height: 0; }
+.pane { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; border-radius: 8px; overflow: hidden; background: var(--stage); border: 1px solid var(--line); }
+.pane-head, .pane-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 10px; background: var(--panel); border-bottom: 1px solid var(--line); min-width: 0; }
+.pane-foot { border-bottom: 0; border-top: 1px solid var(--line); }
+.tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; background: var(--chip); }
+.tag.g { background: var(--accent); color: var(--accent-ink); }
+.fname { font-family: var(--font-mono); font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 120px; }
+.coords { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.example { font-size: 11px; color: var(--warn); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.canvas-wrap { position: relative; min-height: 0; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+.note { flex: 1 1 160px; }
+.help { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.help b { color: var(--ink); font-weight: 500; font-family: var(--font-mono); font-size: 11.5px; }
+
+@media (max-width: 1100px) {
+  .stages { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(320px, 1fr); }
+}
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  .app { height: auto; }
+  .work { grid-template-columns: minmax(0, 1fr); }
+  .side { overflow: visible; }
+  .stages { grid-auto-rows: 60vh; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <h1>Landmark Picker</h1>
+      <p>Click the same named spots on the golden image and on every test image. The result is a <span class="mono">landmarks.json</span> that <span class="mono">evaluate.py</span> reads directly. Your images stay on this computer.</p>
+    </div>
+    <div class="actions">
+      <label class="btn primary" for="file-images">Load images…</label>
+      <input type="file" id="file-images" multiple accept="image/png,image/jpeg,image/bmp,image/webp,.png,.jpg,.jpeg,.bmp" hidden>
+      <label class="btn" for="file-import">Continue from landmarks.json…</label>
+      <input type="file" id="file-import" accept=".json,application/json" hidden>
+      <button class="btn" id="new-part" type="button" title="Remove every loaded image and every point, to start on another part">Start new part</button>
+    </div>
+  </header>
+
+  <main class="work">
+    <aside class="side">
+      <section class="card" aria-labelledby="h-setup">
+        <h2 id="h-setup">Setup</h2>
+        <div class="field"><label for="region">Region</label><input type="text" id="region" value="Full" spellcheck="false"></div>
+        <div class="field"><label for="golden">Golden</label><select id="golden"></select></div>
+        <p class="hint">Every other loaded image is a test image. Load several at once (Ctrl+A in the file dialog).</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-points">
+        <h2 id="h-points">Point names</h2>
+        <div class="colhead"><span></span><span>name</span><span title="placed on the golden image">G</span><span title="placed on the current test image">T</span><span></span></div>
+        <div class="list pts" id="points"></div>
+        <div class="addrow"><input type="text" id="new-point" placeholder="new name, e.g. tab_left" spellcheck="false"><button class="btn small" id="add-point">Add</button></div>
+        <p class="hint">Click a name to make it active. Double-click to rename. Removing a name removes its points from every image.</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-images">
+        <h2 id="h-images">Test images <span id="img-count" class="chip"></span></h2>
+        <div class="list imgs" id="images"></div>
+        <p class="hint">× removes an image and its points. To remove the golden image, choose another golden first. Starting on another part: save landmarks.json, then <b>Start new part</b>.</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-export">
+        <h2 id="h-export">Export</h2>
+        <div class="actions">
+          <button class="btn primary" id="copy-json">Copy landmarks.json</button>
+          <button class="btn" id="save-json" hidden>Save landmarks.json</button>
+        </div>
+        <p class="msg" id="export-msg" role="status"></p>
+        <textarea id="json-out" readonly hidden aria-label="landmarks.json content"></textarea>
+        <p class="hint">Save the file (or paste the copied text into a new file named <span class="mono">landmarks.json</span>), then arrange the folder like this:</p>
+        <pre class="layout" id="layout"></pre>
+      </section>
+    </aside>
+
+    <section class="stages">
+      <div class="pane" id="pane-golden">
+        <div class="pane-head">
+          <span class="tag g">Golden</span><span class="fname" id="g-name">—</span><span class="example" id="g-example" hidden>example</span>
+          <span class="coords" id="g-coords"></span>
+          <button class="btn small" data-fit="golden">Fit</button>
+        </div>
+        <div class="canvas-wrap"><canvas id="cv-golden" tabindex="0" aria-label="Golden image. Click to place the active point."></canvas></div>
+        <div class="pane-foot"><span class="hint" id="g-status"></span></div>
+      </div>
+      <div class="pane" id="pane-test">
+        <div class="pane-head">
+          <span class="tag">Test</span><span class="fname" id="t-name">—</span><span class="example" id="t-example" hidden>example</span>
+          <span class="coords" id="t-coords"></span>
+          <button class="btn small" id="prev" title="Previous test image (←)">←</button>
+          <button class="btn small" id="next" title="Next test image (→)">→</button>
+          <button class="btn small" data-fit="test">Fit</button>
+        </div>
+        <div class="canvas-wrap"><canvas id="cv-test" tabindex="0" aria-label="Test image. Click to place the active point."></canvas></div>
+        <div class="pane-foot">
+          <label for="note" class="hint">Note</label>
+          <input type="text" id="note" class="note" placeholder="e.g. tab_left hidden by glare" maxlength="500">
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="help">
+    <span><b>click</b> place active point</span>
+    <span><b>drag point</b> move it</span>
+    <span><b>right-click point</b> remove</span>
+    <span><b>wheel</b> zoom</span>
+    <span><b>drag</b> pan</span>
+    <span><b>1–9</b> pick point</span>
+    <span><b>← →</b> test image</span>
+    <span>Coordinates: OpenCV convention, centre of the top-left pixel = (0, 0)</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const PALETTE = ["#ff4d4d", "#38c172", "#4d8bff", "#ff9f1c", "#b45cff", "#22d3ee", "#ff5cc8", "#c3e043", "#f2c94c", "#2bb3a3", "#ff7a59", "#9aa7ff"];
+  const DRAFT_KEY = "landmark-picker:draft:v1";
+  const $ = (id) => document.getElementById(id);
+
+  const S = {
+    region: "Full",
+    names: ["p1", "p2", "p3", "p4", "p5", "p6"],
+    images: [],            // {key, name, w, h, bmp, sample}
+    goldenKey: null,
+    testKey: null,
+    active: "p1",
+    ann: {},               // key (sha1 of file, 12 hex) -> {points: {name: [x, y]}, note, added}
+    byName: {},            // filename or template stem -> ann (from an imported file, until the image is loaded)
+    importedTemplate: null,// {hash, stem}
+    otherRegions: {},      // regions of an imported file that are not being edited: written back unchanged
+  };
+
+  // ---------------------------------------------------------------------------------------------------- hashing
+  async function sha12(buf) {
+    if (window.crypto && crypto.subtle) {
+      try {
+        const d = await crypto.subtle.digest("SHA-1", buf);
+        return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 12);
+      } catch (e) { /* fall through */ }
+    }
+    return sha1Fallback(new Uint8Array(buf)).slice(0, 12);
+  }
+  function sha1Fallback(bytes) {
+    const rotl = (x, n) => (x << n) | (x >>> (32 - n));
+    const ml = bytes.length, withOne = ml + 1, total = Math.ceil((withOne + 8) / 64) * 64;
+    const m = new Uint8Array(total); m.set(bytes); m[ml] = 0x80;
+    const dv = new DataView(m.buffer); const bits = ml * 8;
+    dv.setUint32(total - 8, Math.floor(bits / 2 ** 32)); dv.setUint32(total - 4, bits >>> 0);
+    let h0 = 0x67452301, h1 = 0xefcdab89, h2 = 0x98badcfe, h3 = 0x10325476, h4 = 0xc3d2e1f0;
+    const w = new Uint32Array(80);
+    for (let o = 0; o < total; o += 64) {
+      for (let i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+      for (let i = 16; i < 80; i++) w[i] = rotl(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+      let a = h0, b = h1, c = h2, d = h3, e = h4;
+      for (let i = 0; i < 80; i++) {
+        const f = i < 20 ? (b & c) | (~b & d) : i < 40 ? b ^ c ^ d : i < 60 ? (b & c) | (b & d) | (c & d) : b ^ c ^ d;
+        const k = i < 20 ? 0x5a827999 : i < 40 ? 0x6ed9eba1 : i < 60 ? 0x8f1bbcdc : 0xca62c1d6;
+        const t = (rotl(a, 5) + f + e + k + w[i]) >>> 0;
+        e = d; d = c; c = rotl(b, 30) >>> 0; b = a; a = t;
+      }
+      h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0; h4 = (h4 + e) >>> 0;
+    }
+    return [h0, h1, h2, h3, h4].map((x) => x.toString(16).padStart(8, "0")).join("");
+  }
+
+  // ---------------------------------------------------------------------------------------------------- helpers
+  const natural = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+  const stem = (n) => n.replace(/\.[^.]+$/, "");
+  const colorOf = (name) => PALETTE[Math.max(0, S.names.indexOf(name)) % PALETTE.length];
+  const img = (key) => S.images.find((r) => r.key === key) || null;
+  const golden = () => img(S.goldenKey);
+  const tests = () => S.images.filter((r) => r.key !== S.goldenKey);
+  const test = () => img(S.testKey);
+  const ann = (key) => (S.ann[key] = S.ann[key] || { points: {}, note: "" });
+  const realImages = () => S.images.filter((r) => !r.sample);
+  const r2 = (v) => Math.round(v * 100) / 100;
+  function sharedCount(key) {
+    const g = S.ann[S.goldenKey], t = S.ann[key];
+    if (!g || !t) return 0;
+    return S.names.filter((n) => g.points[n] && t.points[n]).length;
+  }
+
+  let saveTimer = null;
+  function changed() {
+    renderSide();
+    golden && panes.golden.draw();
+    panes.test.draw();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDraft, 400);
+  }
+  function saveDraft() {
+    try {
+      const keys = new Set(realImages().map((r) => r.key));
+      const annReal = {};
+      for (const [k, v] of Object.entries(S.ann)) if (keys.has(k) || !S.images.some((r) => r.key === k && r.sample)) annReal[k] = v;
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ region: S.region, names: S.names, ann: annReal, goldenKey: realImages().length ? S.goldenKey : null, active: S.active }));
+    } catch (e) { /* storage unavailable: the export is the record */ }
+  }
+  function loadDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (!d || !d.ann) return 0;
+      S.region = d.region || S.region; S.names = d.names && d.names.length ? d.names : S.names;
+      S.ann = d.ann; S.draftGolden = d.goldenKey; S.active = d.active || S.names[0];
+      return Object.values(d.ann).filter((a) => Object.keys(a.points || {}).length).length;
+    } catch (e) { return 0; }
+  }
+
+  // ---------------------------------------------------------------------------------------------------- panes
+  class Pane {
+    constructor(which, canvas, coordsEl) {
+      this.which = which; this.cv = canvas; this.ctx = canvas.getContext("2d"); this.coordsEl = coordsEl;
+      this.view = null; this.forKey = null; this.drag = null;
+      new ResizeObserver(() => this.resize()).observe(canvas.parentElement);
+      canvas.addEventListener("pointerdown", (e) => this.down(e));
+      canvas.addEventListener("pointermove", (e) => this.move(e));
+      canvas.addEventListener("pointerup", (e) => this.up(e));
+      canvas.addEventListener("pointercancel", () => { this.drag = null; });
+      canvas.addEventListener("pointerleave", () => { if (!this.drag) this.coordsEl.textContent = ""; });
+      canvas.addEventListener("wheel", (e) => this.wheel(e), { passive: false });
+      canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    }
+    rec() { return this.which === "golden" ? golden() : test(); }
+    resize() {
+      const dpr = window.devicePixelRatio || 1, r = this.cv.parentElement.getBoundingClientRect();
+      this.cssW = Math.max(1, r.width); this.cssH = Math.max(1, r.height);
+      this.cv.width = Math.round(this.cssW * dpr); this.cv.height = Math.round(this.cssH * dpr); this.dpr = dpr;
+      if (!this.view) this.fit(); else this.draw();
+    }
+    fit() {
+      const r = this.rec();
+      if (!r || !this.cssW) { this.view = null; this.draw(); return; }
+      const s = Math.min(this.cssW / r.w, this.cssH / r.h) * 0.96;
+      this.view = { s, ox: (this.cssW - r.w * s) / 2, oy: (this.cssH - r.h * s) / 2 };
+      this.forKey = r.key; this.draw();
+    }
+    ensure() { const r = this.rec(); if (r && r.key !== this.forKey) this.fit(); }
+    toImg(u, v) { const { s, ox, oy } = this.view; return [(u - ox) / s - 0.5, (v - oy) / s - 0.5]; }      // OpenCV: centre of pixel (0,0) = (0,0)
+    toScr(x, y) { const { s, ox, oy } = this.view; return [ox + (x + 0.5) * s, oy + (y + 0.5) * s]; }
+    local(e) { const r = this.cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    hit(u, v) {
+      const r = this.rec(); if (!r || !this.view) return null;
+      const pts = (S.ann[r.key] || { points: {} }).points; let best = null, bd = 11;
+      for (const n of S.names) {
+        const p = pts[n]; if (!p) continue;
+        const [a, b] = this.toScr(p[0], p[1]); const d = Math.hypot(a - u, b - v);
+        if (d < bd) { bd = d; best = n; }
+      }
+      return best;
+    }
+    clampPt(x, y) { const r = this.rec(); return [Math.min(Math.max(x, -0.5), r.w - 0.5), Math.min(Math.max(y, -0.5), r.h - 0.5)]; }
+    down(e) {
+      if (!this.view) return;
+      this.cv.focus({ preventScroll: true }); lastPane = this.which;
+      const [u, v] = this.local(e); const h = this.hit(u, v);
+      if (e.button === 2) { if (h) removePoint(this.rec().key, h); return; }
+      this.cv.setPointerCapture(e.pointerId);
+      if (h && e.button === 0) { this.drag = { mode: "point", name: h }; setActive(h, false); }
+      else this.drag = { mode: "pending", u0: u, v0: v, ox0: this.view.ox, oy0: this.view.oy, button: e.button };
+    }
+    move(e) {
+      if (!this.view) return;
+      const [u, v] = this.local(e); const [x, y] = this.toImg(u, v); const r = this.rec();
+      if (r) this.coordsEl.textContent = `x ${x.toFixed(2)}  y ${y.toFixed(2)}`;
+      const d = this.drag; if (!d) { this.cv.style.cursor = this.hit(u, v) ? "move" : "crosshair"; return; }
+      if (d.mode === "point") { ann(r.key).points[d.name] = this.clampPt(x, y); stampAdded(r.key); this.draw(); return; }
+      if (d.mode === "pending" && Math.hypot(u - d.u0, v - d.v0) > 4) d.mode = "pan";
+      if (d.mode === "pan") { this.view.ox = d.ox0 + (u - d.u0); this.view.oy = d.oy0 + (v - d.v0); this.cv.style.cursor = "grabbing"; this.draw(); }
+    }
+    up(e) {
+      const d = this.drag; this.drag = null; if (!d || !this.view) return;
+      const r = this.rec();
+      if (d.mode === "point") { changed(); return; }
+      if (d.mode === "pending" && d.button === 0 && r && !r.sampleLocked) {
+        const [u, v] = this.local(e); const [x, y] = this.toImg(u, v);
+        if (x < -0.5 || y < -0.5 || x > r.w - 0.5 || y > r.h - 0.5) return;        // outside the image
+        if (!S.active) { flash("Add a point name first."); return; }
+        ann(r.key).points[S.active] = [x, y]; stampAdded(r.key);
+        advanceActive(r.key); changed();
+      }
+      this.cv.style.cursor = "crosshair";
+    }
+    wheel(e) {
+      if (!this.view) return; e.preventDefault();
+      const [u, v] = this.local(e); const k = Math.exp(-e.deltaY * 0.0015);
+      const r = this.rec(); const fitS = Math.min(this.cssW / r.w, this.cssH / r.h);
+      const s = Math.min(Math.max(this.view.s * k, fitS * 0.25), 64); const kk = s / this.view.s;
+      this.view.ox = u - (u - this.view.ox) * kk; this.view.oy = v - (v - this.view.oy) * kk; this.view.s = s; this.draw();
+    }
+    draw() {
+      const c = this.ctx, dpr = this.dpr || 1; if (!c || !this.cssW) return;
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const cs = getComputedStyle(document.documentElement);
+      c.fillStyle = cs.getPropertyValue("--stage").trim() || "#111"; c.fillRect(0, 0, this.cssW, this.cssH);
+      const r = this.rec();
+      if (!r || !this.view) {
+        c.fillStyle = cs.getPropertyValue("--stage-ink").trim() || "#ccc"; c.font = "13px " + cs.getPropertyValue("--font-ui");
+        c.textAlign = "center"; c.fillText(this.which === "golden" ? "Load images to start" : "Load at least two images", this.cssW / 2, this.cssH / 2);
+        return;
+      }
+      const { s, ox, oy } = this.view;
+      c.imageSmoothingEnabled = s < 3; c.drawImage(r.bmp, ox, oy, r.w * s, r.h * s);
+      if (s >= 16) {                                                              // pixel grid when zoomed far in
+        c.strokeStyle = "rgba(255,255,255,0.12)"; c.lineWidth = 1; c.beginPath();
+        const x0 = Math.max(0, Math.floor(-ox / s)), x1 = Math.min(r.w, Math.ceil((this.cssW - ox) / s));
+        const y0 = Math.max(0, Math.floor(-oy / s)), y1 = Math.min(r.h, Math.ceil((this.cssH - oy) / s));
+        for (let i = x0; i <= x1; i++) { c.moveTo(ox + i * s, oy + y0 * s); c.lineTo(ox + i * s, oy + y1 * s); }
+        for (let j = y0; j <= y1; j++) { c.moveTo(ox + x0 * s, oy + j * s); c.lineTo(ox + x1 * s, oy + j * s); }
+        c.stroke();
+      }
+      const pts = (S.ann[r.key] || { points: {} }).points;
+      c.font = "600 12px " + (cs.getPropertyValue("--font-mono") || "monospace"); c.textAlign = "left"; c.textBaseline = "middle";
+      for (const n of S.names) {
+        const p = pts[n]; if (!p) continue;
+        const [u, v] = this.toScr(p[0], p[1]); const on = n === S.active; const R = on ? 9 : 7; const col = colorOf(n);
+        for (const [w, st] of [[4, "rgba(0,0,0,0.75)"], [on ? 2 : 1.5, col]]) {
+          c.lineWidth = w; c.strokeStyle = st; c.beginPath(); c.arc(u, v, R, 0, Math.PI * 2);
+          c.moveTo(u - R - 6, v); c.lineTo(u - 3, v); c.moveTo(u + 3, v); c.lineTo(u + R + 6, v);
+          c.moveTo(u, v - R - 6); c.lineTo(u, v - 3); c.moveTo(u, v + 3); c.lineTo(u, v + R + 6); c.stroke();
+        }
+        const tw = c.measureText(n).width; c.fillStyle = "rgba(0,0,0,0.7)"; c.fillRect(u + R + 6, v - R - 14, tw + 8, 16);
+        c.fillStyle = col; c.fillText(n, u + R + 10, v - R - 6);
+      }
+    }
+  }
+  function stampAdded(key) { const a = ann(key); if (!a.added) a.added = new Date().toISOString().slice(0, 19); }
+  function advanceActive(key) {
+    const pts = ann(key).points; const i = S.names.indexOf(S.active);
+    for (let k = 1; k <= S.names.length; k++) { const n = S.names[(i + k) % S.names.length]; if (!pts[n]) { S.active = n; return; } }
+  }
+  function removePoint(key, name) { if (S.ann[key]) delete S.ann[key].points[name]; changed(); }
+  function setActive(n, redraw = true) { S.active = n; if (redraw) changed(); }
+
+  let lastPane = "test";
+  const panes = { golden: new Pane("golden", $("cv-golden"), $("g-coords")), test: new Pane("test", $("cv-test"), $("t-coords")) };
+  document.querySelectorAll("[data-fit]").forEach((b) => b.addEventListener("click", () => panes[b.dataset.fit].fit()));
+
+  // ---------------------------------------------------------------------------------------------------- sidebar
+  let armed = null, armedImg = null;
+  function renderSide() {
+    $("region").value = S.region;
+    const gsel = $("golden"); gsel.innerHTML = "";
+    for (const r of S.images) { const o = document.createElement("option"); o.value = r.key; o.textContent = r.name + (r.sample ? " (example)" : ""); o.selected = r.key === S.goldenKey; gsel.appendChild(o); }
+    gsel.disabled = S.images.length < 2;
+
+    const g = S.ann[S.goldenKey] || { points: {} }, t = S.ann[S.testKey] || { points: {} };
+    const box = $("points"); box.innerHTML = "";
+    S.names.forEach((n, i) => {
+      const row = document.createElement("div"); row.className = "row" + (n === S.active ? " on" : ""); row.tabIndex = 0;
+      row.title = i < 9 ? `Key ${i + 1}` : "";
+      const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorOf(n);
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = n;
+      const gm = document.createElement("span"); gm.className = "mark" + (g.points[n] ? " yes" : ""); gm.textContent = g.points[n] ? "✓" : "–";
+      const tm = document.createElement("span"); tm.className = "mark" + (t.points[n] ? " yes" : ""); tm.textContent = t.points[n] ? "✓" : "–";
+      const x = document.createElement("button"); x.className = "x" + (armed === n ? " arm" : ""); x.textContent = armed === n ? "sure?" : "×";
+      x.title = "Remove this name and its points from every image"; x.setAttribute("aria-label", `Remove ${n}`);
+      x.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (armed !== n) { armed = n; renderSide(); setTimeout(() => { if (armed === n) { armed = null; renderSide(); } }, 3000); return; }
+        armed = null; S.names = S.names.filter((m) => m !== n);
+        for (const a of Object.values(S.ann)) delete a.points[n];
+        if (S.active === n) S.active = S.names[0] || null; changed();
+      });
+      row.addEventListener("click", () => setActive(n));
+      row.addEventListener("keydown", (e) => { if (e.key === "Enter") setActive(n); });
+      nm.addEventListener("dblclick", (e) => { e.stopPropagation(); rename(nm, n); });
+      row.append(dot, nm, gm, tm, x); box.appendChild(row);
+    });
+
+    const ib = $("images"); ib.innerHTML = "";
+    const ts = tests(); $("img-count").textContent = ts.length;
+    for (const r of ts) {
+      const row = document.createElement("div"); row.className = "row" + (r.key === S.testKey ? " on" : ""); row.tabIndex = 0;
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = r.name + (r.sample ? " (example)" : "");
+      const k = sharedCount(r.key); const placed = Object.keys((S.ann[r.key] || { points: {} }).points).length;
+      const chip = document.createElement("span"); chip.className = "chip " + (placed === 0 ? "" : k >= 3 ? "ok" : "warn");
+      chip.textContent = `${placed}/${S.names.length}`; chip.title = k >= 3 ? `${k} points shared with the golden image` : "fewer than 3 points shared with the golden image: evaluate.py will skip this pair";
+      const x = document.createElement("button"); x.className = "x" + (armedImg === r.key ? " arm" : ""); x.textContent = armedImg === r.key ? "sure?" : "×";
+      x.title = placed ? "Remove this image and its points" : "Remove this image"; x.setAttribute("aria-label", `Remove ${r.name}`);
+      x.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (placed && armedImg !== r.key) { armedImg = r.key; renderSide(); setTimeout(() => { if (armedImg === r.key) { armedImg = null; renderSide(); } }, 3000); return; }
+        armedImg = null; removeImage(r.key);
+      });
+      row.append(nm, chip, x); row.addEventListener("click", () => selectTest(r.key)); row.addEventListener("keydown", (e) => { if (e.key === "Enter") selectTest(r.key); });
+      ib.appendChild(row);
+    }
+    if (!ts.length) { const p = document.createElement("p"); p.className = "hint"; p.textContent = "No test images yet."; ib.appendChild(p); }
+
+    const gr = golden(), tr = test();
+    $("g-name").textContent = gr ? `${gr.name}  ·  ${gr.w}×${gr.h}` : "—"; $("g-example").hidden = !(gr && gr.sample);
+    $("t-name").textContent = tr ? `${tr.name}  ·  ${tr.w}×${tr.h}` : "—"; $("t-example").hidden = !(tr && tr.sample);
+    const gp = Object.keys(g.points).filter((n) => S.names.includes(n)).length;
+    $("g-status").textContent = gr ? `${gp} of ${S.names.length} points on the golden image` + (gp < 3 ? " · place at least 3" : "") : "";
+    $("note").value = tr ? ((S.ann[tr.key] || {}).note || "") : ""; $("note").disabled = !tr;
+    $("prev").disabled = $("next").disabled = ts.length < 2;
+    const onlySample = !realImages().length;
+    $("copy-json").disabled = onlySample; $("save-json").disabled = onlySample;
+    if (onlySample && S.images.length) setMsg("Showing example images. Load your own images to export.", "");
+    renderLayout();
+  }
+  function rename(el, old) {
+    const inp = document.createElement("input"); inp.type = "text"; inp.value = old; inp.spellcheck = false; inp.style.height = "24px";
+    el.replaceWith(inp); inp.focus(); inp.select();
+    const done = (commit) => {
+      const nv = inp.value.trim();
+      if (commit && nv && nv !== old && !S.names.includes(nv)) {
+        S.names = S.names.map((m) => (m === old ? nv : m));
+        for (const a of Object.values(S.ann)) if (a.points[old]) { a.points[nv] = a.points[old]; delete a.points[old]; }
+        if (S.active === old) S.active = nv;
+      }
+      changed();
+    };
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") done(true); if (e.key === "Escape") done(false); e.stopPropagation(); });
+    inp.addEventListener("blur", () => done(true), { once: true });
+  }
+  function addPoint() {
+    const inp = $("new-point"); const n = inp.value.trim();
+    if (!n) return;
+    if (S.names.includes(n)) { flash(`"${n}" already exists.`); return; }
+    if (S.names.length >= 64) { flash("At most 64 point names."); return; }
+    S.names.push(n); S.active = n; inp.value = ""; changed();
+  }
+  $("add-point").addEventListener("click", addPoint);
+  $("new-point").addEventListener("keydown", (e) => { if (e.key === "Enter") addPoint(); e.stopPropagation(); });
+  $("region").addEventListener("input", (e) => { S.region = e.target.value.trim() || "Full"; renderLayout(); clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 400); });
+  $("region").addEventListener("keydown", (e) => e.stopPropagation());
+  $("golden").addEventListener("change", (e) => { S.goldenKey = e.target.value; if (S.testKey === S.goldenKey) S.testKey = (tests()[0] || {}).key || null; panes.golden.fit(); panes.test.fit(); changed(); });
+  $("note").addEventListener("input", (e) => { const r = test(); if (r) { ann(r.key).note = e.target.value; clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 400); } });
+  $("note").addEventListener("keydown", (e) => e.stopPropagation());
+  function selectTest(key) { S.testKey = key; panes.test.ensure(); changed(); }
+  function removeImage(key) {
+    const r = img(key); if (!r) return;
+    const i = tests().findIndex((x) => x.key === key);
+    S.images = S.images.filter((x) => x.key !== key);
+    delete S.ann[key]; delete S.byName[r.name];                 // gone for good: loading it again starts it without points
+    if (S.testKey === key) { const rest = tests(); S.testKey = (rest[Math.min(Math.max(i, 0), rest.length - 1)] || {}).key || null; panes.test.fit(); }
+    changed();
+    setMsg(`Removed ${r.name}.`, "ok");
+  }
+
+  // Start new part: forget every image and every point (also the copy kept in this browser), keep the point names and region.
+  let savedSig = null, resetArmed = false, resetTimer = null;
+  const annSig = () => JSON.stringify([S.region, S.names, realImages().map((r) => [r.key, S.ann[r.key] || null])]);
+  const hasUnsaved = () => realImages().some((r) => S.ann[r.key] && Object.keys(S.ann[r.key].points).length) && annSig() !== savedSig;
+  function disarmReset() { resetArmed = false; clearTimeout(resetTimer); const b = $("new-part"); b.classList.remove("danger"); b.textContent = "Start new part"; }
+  $("new-part").addEventListener("click", () => {
+    if (!resetArmed) {
+      resetArmed = true; const b = $("new-part"); b.classList.add("danger");
+      b.textContent = hasUnsaved() ? "Not saved yet: click again to clear" : "Click again to clear";
+      clearTimeout(resetTimer); resetTimer = setTimeout(disarmReset, 4000); return;
+    }
+    disarmReset();
+    S.images = []; S.ann = {}; S.byName = {}; S.importedTemplate = null; S.otherRegions = {}; S.draftGolden = null;
+    S.goldenKey = S.testKey = null; S.active = S.names[0] || null; savedSig = null; armed = armedImg = null;
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* nothing stored */ }
+    const ta = $("json-out"); ta.value = ""; ta.hidden = true;
+    panes.golden.fit(); panes.test.fit(); changed();
+    setMsg("Cleared: no images and no points. Point names and region are kept (change them if the new part needs others). Load the next part's images.", "ok");
+  });
+  function step(d) { const ts = tests(); if (!ts.length) return; const i = ts.findIndex((r) => r.key === S.testKey); selectTest(ts[(i + d + ts.length) % ts.length].key); }
+  $("prev").addEventListener("click", () => step(-1)); $("next").addEventListener("click", () => step(1));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input, textarea, select")) return;
+    if (e.key === "ArrowRight") { step(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { step(-1); e.preventDefault(); }
+    else if (/^[1-9]$/.test(e.key) && S.names[+e.key - 1]) setActive(S.names[+e.key - 1]);
+    else if (e.key === "Delete" || e.key === "Backspace") { const r = lastPane === "golden" ? golden() : test(); if (r && S.active) removePoint(r.key, S.active); }
+  });
+
+  // ---------------------------------------------------------------------------------------------------- loading
+  async function loadFiles(files) {
+    const list = [...files].filter((f) => /\.(png|jpe?g|bmp|webp)$/i.test(f.name) || (f.type || "").startsWith("image/"));
+    if (!list.length) { flash("No images in that selection (PNG, JPEG, BMP or WebP)."); return; }
+    setMsg(`Reading ${list.length} image(s)…`, "");
+    const bad = [], dup = [];
+    if (S.images.some((r) => r.sample)) { for (const r of S.images.filter((r) => r.sample)) delete S.ann[r.key]; S.images = S.images.filter((r) => !r.sample); S.goldenKey = S.testKey = null; }
+    for (const f of list) {
+      try {
+        const buf = await f.arrayBuffer(); const key = await sha12(buf);
+        if (S.images.some((r) => r.key === key)) { dup.push(f.name); continue; }
+        const bmp = await createImageBitmap(new Blob([buf], { type: f.type || "image/png" }));
+        S.images.push({ key, name: f.name, w: bmp.width, h: bmp.height, bmp, sample: false });
+      } catch (e) { bad.push(f.name); }
+    }
+    S.images.sort((a, b) => natural(a.name, b.name));
+    reattach();
+    if (!S.goldenKey || !golden()) {
+      const it = S.importedTemplate;
+      const m = it && (S.images.find((r) => r.key === it.hash) || S.images.find((r) => stem(r.name) === it.stem));
+      S.goldenKey = (m || S.images.find((r) => r.key === S.draftGolden) || S.images[0] || {}).key || null;
+    }
+    if (!S.testKey || !test() || S.testKey === S.goldenKey) S.testKey = (tests()[0] || {}).key || null;
+    panes.golden.fit(); panes.test.fit(); changed();
+    const parts = [`${realImages().length} image(s) loaded.`];
+    if (dup.length) parts.push(`Skipped ${dup.length} duplicate(s).`);
+    if (bad.length) parts.push(`Could not read: ${bad.join(", ")} (TIFF is not supported by browsers; convert to PNG).`);
+    setMsg(parts.join(" "), bad.length ? "err" : "ok");
+  }
+  function reattach() {
+    for (const r of S.images) {
+      if (S.ann[r.key] && Object.keys(S.ann[r.key].points).length) continue;
+      const a = S.byName[r.name] || (S.importedTemplate && stem(r.name) === S.importedTemplate.stem ? S.byName["template:" + S.importedTemplate.stem] : null);
+      if (a) S.ann[r.key] = a;
+    }
+  }
+  $("file-images").addEventListener("change", (e) => { loadFiles(e.target.files); e.target.value = ""; });
+  document.addEventListener("dragover", (e) => e.preventDefault());
+  document.addEventListener("drop", (e) => {
+    e.preventDefault(); const fs = [...(e.dataTransfer && e.dataTransfer.files || [])];
+    const js = fs.find((f) => /\.json$/i.test(f.name)); if (js) importStore(js);
+    const ims = fs.filter((f) => !/\.json$/i.test(f.name)); if (ims.length) loadFiles(ims);
+  });
+
+  async function importStore(file) {
+    try {
+      const obj = JSON.parse(await file.text());
+      if (!obj || typeof obj.regions !== "object") throw new Error("this file has no \"regions\"; it is not a landmarks.json");
+      const names = Object.keys(obj.regions);
+      if (!names.length) throw new Error("the file has no regions");
+      const rn = names.includes(S.region) ? S.region : names[0];
+      const r = obj.regions[rn] || {};
+      S.region = rn;
+      const pn = (r.point_names || []).map(String);
+      if (pn.length) S.names = pn;
+      const tk = Object.keys(r.templates || {})[0];
+      if (tk) {
+        const t = r.templates[tk]; const a = { points: { ...(t.points || {}) }, note: "" };
+        S.importedTemplate = { hash: t.source_hash || null, stem: tk };
+        if (t.source_hash) S.ann[t.source_hash] = a;
+        S.byName["template:" + tk] = a;
+      }
+      let n = 0;
+      for (const im of r.images || []) {
+        const a = { points: { ...(im.points || {}) }, note: im.note || "", added: im.added };
+        if (im.id) S.ann[im.id] = a; if (im.filename) S.byName[im.filename] = a; n++;
+      }
+      S.otherRegions = {}; for (const k of names) if (k !== rn) S.otherRegions[k] = obj.regions[k];
+      S.active = S.names[0]; reattach();
+      const it = S.importedTemplate; const m = it && (S.images.find((x) => x.key === it.hash) || S.images.find((x) => stem(x.name) === it.stem));
+      if (m) { S.goldenKey = m.key; if (S.testKey === S.goldenKey) S.testKey = (tests()[0] || {}).key || null; panes.golden.fit(); panes.test.fit(); }
+      changed();
+      setMsg(`Imported region "${rn}": ${S.names.length} point names, ${n} annotated image(s). Load the same images to see the points.`, "ok");
+    } catch (e) { setMsg(`Could not import ${file.name}: ${e.message}`, "err"); }
+  }
+  $("file-import").addEventListener("change", (e) => { if (e.target.files[0]) importStore(e.target.files[0]); e.target.value = ""; });
+
+  // ---------------------------------------------------------------------------------------------------- export
+  function roundPts(points) {
+    const o = {}; for (const n of S.names) if (points[n]) o[n] = [r2(points[n][0]), r2(points[n][1])]; return o;
+  }
+  function buildStore() {
+    const g = golden(); if (!g || g.sample) throw new Error("load your images first");
+    const gp = roundPts((S.ann[g.key] || { points: {} }).points);
+    if (Object.keys(gp).length < 3) throw new Error(`place at least 3 points on the golden image (${Object.keys(gp).length} so far)`);
+    const region = { point_names: S.names.slice(), templates: { [stem(g.name)]: { size: [g.w, g.h], source_hash: g.key, points: gp } }, images: [] };
+    let few = 0;
+    for (const r of tests()) {
+      if (r.sample) continue;
+      const a = S.ann[r.key]; const pts = a ? roundPts(a.points) : {};
+      if (!Object.keys(pts).length) continue;
+      if (sharedCount(r.key) < 3) few++;
+      region.images.push({ id: r.key, filename: r.name, width: r.w, height: r.h, added: a.added || new Date().toISOString().slice(0, 19), points: pts, note: a.note || "" });
+    }
+    const regions = { ...S.otherRegions, [S.region]: region };
+    return { store: { version: 1, regions }, n: region.images.length, few };
+  }
+  function exportText() {
+    const { store, n, few } = buildStore();
+    const text = JSON.stringify(store, null, 1);
+    const ta = $("json-out"); ta.hidden = false; ta.value = text;
+    const extra = few ? ` ${few} of them share fewer than 3 points with the golden image and will be skipped by evaluate.py.` : "";
+    return { text, info: `Golden image + ${n} test image(s).${extra}` };
+  }
+  $("copy-json").addEventListener("click", () => {
+    let out; try { out = exportText(); } catch (e) { setMsg(`Cannot export yet: ${e.message}.`, "err"); return; }
+    const sel = () => { const ta = $("json-out"); ta.focus(); ta.select(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(out.text).then(() => { savedSig = annSig(); setMsg(`Copied. ${out.info}`, "ok"); }, () => { sel(); setMsg(`Copying was blocked: the text below is selected, press Ctrl+C. ${out.info}`, "err"); });
+    } else { sel(); setMsg(`Press Ctrl+C to copy the selected text. ${out.info}`, "ok"); }
+  });
+  // Saving: a plain browser download when the tool is opened from disk; inside the Claude viewer, the downloads capability
+  // (the viewer confirms the save). Anywhere else only Copy is offered.
+  let saver = null;
+  if (location.protocol === "file:") {
+    saver = async (text) => {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      a.download = "landmarks.json"; document.body.appendChild(a); a.click(); a.remove(); return "saved";
+    };
+    $("save-json").hidden = false;
+  } else if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("downloads").then((d) => {
+      if (!d) return;
+      saver = async (text) => (await d.save({ filename: "landmarks.json", data: text })).status;
+      $("save-json").hidden = false;
+    }).catch(() => {});
+  }
+  $("save-json").addEventListener("click", async () => {
+    if (!saver) return;
+    let out; try { out = exportText(); } catch (e) { setMsg(`Cannot export yet: ${e.message}.`, "err"); return; }
+    try {
+      const st = await saver(out.text); savedSig = annSig();
+      setMsg(st === "delivered" ? `Sent. ${out.info}` : `Saved landmarks.json. ${out.info}`, "ok");
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "declined") setMsg("Save cancelled. Nothing was written.", "");
+      else if (code === "rate_limited") setMsg("A save prompt is already open. Finish it, then try again.", "err");
+      else { $("save-json").hidden = true; saver = null; setMsg(`Saving is not available here. Use Copy and paste into a file named landmarks.json. ${out.info}`, "err"); }
+    }
+  });
+  function renderLayout() {
+    const g = golden(); const gn = g && !g.sample ? g.name : "<golden image>";
+    const ext = (gn.match(/\.[^.]+$/) || [".png"])[0];
+    const reg = S.region || "Full";
+    $("layout").textContent =
+`data\\my_part\\
+├── landmarks.json
+├── images\\                      every test image, original file names
+│   └── ${(tests().find((r) => !r.sample) || { name: "001.png" }).name}  …
+└── templates\\${reg}\\${stem(gn)}${ext}   the golden image, unchanged
+
+python evaluate.py --config configs\\parts\\my_part.yaml ^
+    --out results\\my_part`;
+  }
+  function setMsg(t, cls) { const m = $("export-msg"); m.textContent = t; m.className = "msg " + (cls || ""); }
+  function flash(t) { setMsg(t, "err"); }
+
+  // ---------------------------------------------------------------------------------------------------- example images
+  async function makeSample() {
+    const W = 640, H = 480;
+    function draw(rot, tx, ty) {
+      const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+      x.fillStyle = "#2a2d31"; x.fillRect(0, 0, W, H);
+      x.translate(W / 2 + tx, H / 2 + ty); x.rotate(rot * Math.PI / 180);
+      x.fillStyle = "#b9bec4"; x.beginPath();                                     // a bracket with a tab and two holes
+      x.moveTo(-170, -110); x.lineTo(150, -110); x.lineTo(150, -40); x.lineTo(205, -40); x.lineTo(205, 20); x.lineTo(150, 20);
+      x.lineTo(150, 110); x.lineTo(-170, 110); x.closePath(); x.fill();
+      x.fillStyle = "#2a2d31"; for (const [hx, hy, hr] of [[-110, -50, 24], [80, 55, 16]]) { x.beginPath(); x.arc(hx, hy, hr, 0, Math.PI * 2); x.fill(); }
+      x.fillStyle = "#7d848b"; x.fillRect(-60, 20, 120, 40);
+      return createImageBitmap(c);
+    }
+    const P = { p1: [-170, -110], p2: [150, -110], p3: [205, -40], p4: [-170, 110], p5: [-110, -50], p6: [60, 60] };
+    const map = (rot, tx, ty, [a, b]) => { const t = rot * Math.PI / 180; return [W / 2 + tx + a * Math.cos(t) - b * Math.sin(t) - 0.5, H / 2 + ty + a * Math.sin(t) + b * Math.cos(t) - 0.5]; };
+    const gb = await draw(0, 0, 0), tb = await draw(6, 22, -14);
+    S.images = [{ key: "example-golden", name: "example_golden.png", w: W, h: H, bmp: gb, sample: true },
+                { key: "example-test", name: "example_test_01.png", w: W, h: H, bmp: tb, sample: true }];
+    S.goldenKey = "example-golden"; S.testKey = "example-test";
+    S.ann["example-golden"] = { points: Object.fromEntries(["p1", "p2", "p3", "p4", "p5"].map((n) => [n, map(0, 0, 0, P[n])])), note: "" };
+    S.ann["example-test"] = { points: Object.fromEntries(["p1", "p2", "p3"].map((n) => [n, map(6, 22, -14, P[n])])), note: "" };
+    S.active = "p4";
+  }
+
+  // ---------------------------------------------------------------------------------------------------- start
+  (async () => {
+    const restored = loadDraft();
+    const draftAnn = S.ann; const draftNames = S.names, draftRegion = S.region, draftActive = S.active;
+    if (!restored) { await makeSample(); }
+    else { S.ann = draftAnn; S.names = draftNames; S.region = draftRegion; S.active = draftActive; await makeSampleKeepingDraft(); }
+    panes.golden.fit(); panes.test.fit(); changed();
+    if (restored) setMsg(`Your points for ${restored} image(s) from last time are kept. Load the same images to continue.`, "ok");
+  })();
+  async function makeSampleKeepingDraft() {
+    const keep = { ann: S.ann, names: S.names, region: S.region, active: S.active };
+    await makeSample();
+    S.ann = { ...keep.ann, "example-golden": S.ann["example-golden"], "example-test": S.ann["example-test"] };
+    S.names = keep.names; S.region = keep.region; S.active = keep.active || S.names[0];
+  }
+})();
+</script>
+
+</body>
+</html>

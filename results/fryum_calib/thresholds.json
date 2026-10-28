@@ -1,0 +1,116 @@
+{
+  "calibration_run": "results/fryum_calib",
+  "tau_px": 36.6,
+  "criterion": "max-risk 0.05: lowest threshold with at most 5% of accepted poses wrong",
+  "methods": {
+    "phase_correlation": {
+      "score": "own confidence (peak / edge score)",
+      "pairs": 30,
+      "right_poses": 14,
+      "default_rule": {
+        "coverage": 0.03333333333333333,
+        "risk": 0.0
+      },
+      "threshold": 0.072201088297526,
+      "coverage": 0.16666666666666666,
+      "risk": 0.0
+    },
+    "sift_ransac": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 20,
+      "default_rule": {
+        "coverage": 0.5333333333333333,
+        "risk": 0.125
+      },
+      "threshold": null,
+      "accept_none": true,
+      "coverage": 0.0,
+      "risk": 0.0
+    },
+    "lightglue_disk": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 6,
+      "default_rule": {
+        "coverage": 1.0,
+        "risk": 0.8
+      },
+      "threshold": 554.0,
+      "coverage": 0.03333333333333333,
+      "risk": 0.0
+    },
+    "lightglue_sift": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 21,
+      "default_rule": {
+        "coverage": 1.0,
+        "risk": 0.3
+      },
+      "threshold": 86.0,
+      "coverage": 0.16666666666666666,
+      "risk": 0.0
+    },
+    "contour_shape_match": {
+      "score": "own confidence (peak / edge score)",
+      "pairs": 30,
+      "right_poses": 30,
+      "default_rule": {
+        "coverage": 0.1,
+        "risk": 0.0
+      },
+      "threshold": 0.2068646330030835,
+      "coverage": 1.0,
+      "risk": 0.0
+    },
+    "phase_correlation+rot": {
+      "score": "own confidence (peak / edge score)",
+      "pairs": 30,
+      "right_poses": 18,
+      "default_rule": {
+        "coverage": 0.13333333333333333,
+        "risk": 0.5
+      },
+      "threshold": 0.1057122601638605,
+      "coverage": 0.06666666666666667,
+      "risk": 0.0
+    },
+    "sift_ransac+rot": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 18,
+      "default_rule": {
+        "coverage": 0.7333333333333333,
+        "risk": 0.3181818181818182
+      },
+      "threshold": 14.0,
+      "coverage": 0.03333333333333333,
+      "risk": 0.0
+    },
+    "lightglue_disk+rot": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 7,
+      "default_rule": {
+        "coverage": 1.0,
+        "risk": 0.7666666666666667
+      },
+      "threshold": 554.0,
+      "coverage": 0.03333333333333333,
+      "risk": 0.0
+    },
+    "lightglue_sift+rot": {
+      "score": "RANSAC inliers",
+      "pairs": 30,
+      "right_poses": 19,
+      "default_rule": {
+        "coverage": 1.0,
+        "risk": 0.36666666666666664
+      },
+      "threshold": 114.0,
+      "coverage": 0.16666666666666666,
+      "risk": 0.0
+    }
+  }
+}
