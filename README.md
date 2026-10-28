@@ -97,8 +97,10 @@ need `torch`, `kornia` and `lightglue` (see requirements.txt); without them they
   CC BY-NC-SA 4.0: only numbers are published here; no MVTec image is redistributed.
 * LightGlue (Lindenberger, Sarlin & Pollefeys, ICCV 2023) and its DISK and SIFT weights: Apache-2.0. SuperPoint is not used
   (non-commercial licence).
-* Code: Apache License 2.0 (LICENSE, NOTICE). The datasets keep their own licences above. Pictures in `report/` are made from
-  VisA images (CC BY 4.0, credited above); no MVTec AD image, and no picture made from one, is included.
+* Licences by folder (NOTICE has the full list): code and documentation Apache-2.0; `annotations/` and the VisA results
+  (`results/pcb*`, `chewing_gum*`, `fryum*`) CC BY 4.0; the MVTec AD results (`results/metal_nut*`, `screw*`) and the
+  report figures, which include them, CC BY-NC-SA 4.0 (non-commercial). Pictures in `report/` are made from VisA images
+  only.
 
 ## References
 
